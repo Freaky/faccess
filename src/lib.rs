@@ -66,7 +66,7 @@ pub trait PathExt {
     ///
     /// # Platform-specific behaviour
     ///
-    /// This function currently corresponds to the `faccessat` function in Unix,
+    /// This function currently corresponds to the [`faccessat`] function in Unix,
     /// with a directory of `AT_FDCWD`, and the `AT_EACCESS` flag to perform the
     /// check against the effective user and group.
     ///
@@ -80,6 +80,8 @@ pub trait PathExt {
     ///
     /// assert_eq!(Path::new("/etc/master.password").readable(), false);
     /// ```
+    ///
+    /// [`faccessat`]: https://pubs.opengroup.org/onlinepubs/9699919799/functions/access.html
     fn readable(&self) -> bool;
 
     /// Returns `true` if the path points at a writable entity.
@@ -89,7 +91,7 @@ pub trait PathExt {
     ///
     /// # Platform-specific behaviour
     ///
-    /// This function currently corresponds to the `faccessat` function in Unix,
+    /// This function currently corresponds to the [`faccessat`] function in Unix,
     /// with a directory of `AT_FDCWD`, and the `AT_EACCESS` flag to perform the
     /// check against the effective user and group.
     ///
@@ -108,6 +110,8 @@ pub trait PathExt {
     ///
     /// The Rust standard library's `std::fs::Permissions::readonly` method
     /// is this function's inverse.
+    ///
+    /// [`faccessat`]: https://pubs.opengroup.org/onlinepubs/9699919799/functions/access.html
     fn writable(&self) -> bool;
 
     /// Returns `true` if the path points at an executable entity.
@@ -120,7 +124,7 @@ pub trait PathExt {
     ///
     /// # Platform-specific behaviour
     ///
-    /// This function currently corresponds to the `faccessat` function in Unix,
+    /// This function currently corresponds to the [`faccessat`] function in Unix,
     /// with a directory of `AT_FDCWD`, and the `AT_EACCESS` flag to perform the
     /// check against the effective user and group.
     ///
@@ -134,6 +138,8 @@ pub trait PathExt {
     ///
     /// assert_eq!(Path::new("/bin/ls").executable(), true);
     /// ```
+    ///
+    /// [`faccessat`]: https://pubs.opengroup.org/onlinepubs/9699919799/functions/access.html
     fn executable(&self) -> bool;
 }
 
