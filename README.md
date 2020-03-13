@@ -1,3 +1,6 @@
+[![Cargo](https://img.shields.io/crates/v/tarssh.svg)][crate] 
+![](https://github.com/Freaky/faccess/workflows/Continuous%20Integration/badge.svg)
+
 # faccess
 
 Basic file accessibility checks for Rust.
@@ -28,3 +31,4 @@ succeeded.
 
 [`faccessat(2)`]: https://pubs.opengroup.org/onlinepubs/9699919799/functions/access.html
 [TOCTOU]: https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use
+[crate]: https://crates.io/crates/faccess
