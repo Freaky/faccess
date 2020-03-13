@@ -3,7 +3,14 @@ mod imp {
     use std::os::unix::ffi::OsStrExt;
     use std::path::Path;
 
-    use libc::{c_int, faccessat, AT_EACCESS, AT_FDCWD, R_OK, W_OK, X_OK};
+    use libc::{c_int, faccessat, AT_FDCWD, R_OK, W_OK, X_OK};
+
+    // revert once https://github.com/rust-lang/libc/pull/1693 lands
+    #[cfg(target_os = "linux")]
+    use libc::AT_REMOVEDIR as AT_EACCESS;
+
+    #[cfg(not(target_os = "linux"))]
+    use libc::AT_EACCESS;
 
     fn eaccess(p: &Path, mode: c_int) -> bool {
         unsafe {
