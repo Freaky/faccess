@@ -5,10 +5,10 @@ Basic file accessibility checks for Rust.
 ## Synopsis
 
 ```rust
-use std::path::PathBuf;
+use std::path::Path;
 use faccess::PathExt;
 
-let path = PathBuf::from("/bin/ls");
+let path = Path::new("/bin/ls");
 assert!(path.readable());
 assert!(!path.writable());
 assert!(path.executable());

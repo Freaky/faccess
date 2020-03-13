@@ -153,10 +153,10 @@ impl PathExt for std::path::Path {
 
 #[test]
 fn amazing_test_suite() {
-    use std::path::PathBuf;
+    use std::path::Path;
 
-    let path = PathBuf::from("Cargo.toml");
-    let notpath = PathBuf::from("Cargo.toml from another dimension");
+    let path = Path::new("Cargo.toml");
+    let notpath = Path::new("Cargo.toml from another dimension");
 
     #[cfg(unix)]
     {
@@ -164,7 +164,7 @@ fn amazing_test_suite() {
         assert!(path.writable());
         assert!(!path.executable());
 
-        assert!(PathBuf::from("/bin/sh").executable());
+        assert!(Path::new("/bin/sh").executable());
     }
 
     #[cfg(not(unix))]
