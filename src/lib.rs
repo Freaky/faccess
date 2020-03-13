@@ -65,7 +65,7 @@ pub trait PathExt {
     /// with a directory of `AT_FDCWD`, and the `AT_EACCESS` flag to perform the
     /// check against the effective user and group.
     ///
-    /// On Windows it currently delegates to `std::path::Path::exists`.
+    /// On other platforms it currently delegates to `std::path::Path::exists`.
     ///
     /// # Examples
     ///
@@ -90,7 +90,7 @@ pub trait PathExt {
     /// with a directory of `AT_FDCWD`, and the `AT_EACCESS` flag to perform the
     /// check against the effective user and group.
     ///
-    /// On Windows it currently delegates to `std::fs::Permissions::readonly`.
+    /// On other platforms it currently delegates to `std::fs::Permissions::readonly`.
     ///
     /// # Examples
     ///
@@ -123,7 +123,7 @@ pub trait PathExt {
     /// with a directory of `AT_FDCWD`, and the `AT_EACCESS` flag to perform the
     /// check against the effective user and group.
     ///
-    /// On Windows it currently delegates to `std::path::Path::exists`.
+    /// On other platforms it currently delegates to `std::path::Path::exists`.
     ///
     /// # Examples
     ///
