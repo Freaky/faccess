@@ -1,14 +1,18 @@
-
 #[cfg(unix)]
 mod imp {
-    use std::path::Path;
     use std::os::unix::ffi::OsStrExt;
+    use std::path::Path;
 
-    use libc::{faccessat, AT_EACCESS, AT_FDCWD, c_int, R_OK, W_OK, X_OK};
+    use libc::{c_int, faccessat, AT_EACCESS, AT_FDCWD, R_OK, W_OK, X_OK};
 
     fn eaccess(p: &Path, mode: c_int) -> bool {
         unsafe {
-            faccessat(AT_FDCWD, p.as_os_str().as_bytes().as_ptr() as *const i8, mode, AT_EACCESS) == 0
+            faccessat(
+                AT_FDCWD,
+                p.as_os_str().as_bytes().as_ptr() as *const i8,
+                mode,
+                AT_EACCESS,
+            ) == 0
         }
     }
 
@@ -34,7 +38,9 @@ mod imp {
     }
 
     pub fn writable(p: &Path) -> bool {
-        !std::fs::metadata(p).map(|md| md.permissions().readonly()).unwrap_or(true)
+        !std::fs::metadata(p)
+            .map(|md| md.permissions().readonly())
+            .unwrap_or(true)
     }
 
     pub fn executable(p: &Path) -> bool {
