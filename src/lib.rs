@@ -49,8 +49,84 @@ mod imp {
 }
 
 pub trait PathExt {
+    /// Returns `true` if the path points at a readable entity.
+    ///
+    /// This function will traverse symbolic links.  In the case of broken
+    /// symbolic links it will return `false`.
+    ///
+    /// This function is best-effort, and on some platforms may simply indicate
+    /// the path exists.  Care should be taken not to rely on its result.
+    ///
+    /// # Platform-specific behaviour
+    ///
+    /// This function currently corresponds to the `faccessat` function in Unix,
+    /// with a directory of `AT_FDCWD`, and the `AT_EACCESS` flag to perform the
+    /// check against the effective user and group.
+    ///
+    /// On Windows it currently delegates to `std::path::Path::exists`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::path::Path;
+    /// use faccess::PathExt;
+    ///
+    /// assert_eq!(Path::new("/etc/master.password").readable(), false);
+    /// ```
     fn readable(&self) -> bool;
+
+    /// Returns `true` if the path points at a writable entity.
+    ///
+    /// This function will traverse symbolic links.  In the case of broken
+    /// symbolic links it will return `false`.
+    ///
+    /// # Platform-specific behaviour
+    ///
+    /// This function currently corresponds to the `faccessat` function in Unix,
+    /// with a directory of `AT_FDCWD`, and the `AT_EACCESS` flag to perform the
+    /// check against the effective user and group.
+    ///
+    /// On Windows it currently delegates to `std::fs::Permissions::readonly`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::path::Path;
+    /// use faccess::PathExt;
+    ///
+    /// assert_eq!(Path::new("/etc/master.password").writable(), false);
+    /// ```
+    ///
+    /// # See Also
+    ///
+    /// The Rust standard library's `std::fs::Permissions::readonly` method
+    /// is this function's inverse.
     fn writable(&self) -> bool;
+
+    /// Returns `true` if the path points at an executable entity.
+    ///
+    /// This function will traverse symbolic links.  In the case of broken
+    /// symbolic links it will return `false`.
+    ///
+    /// This function is best-effort, and on some platforms may simply indicate
+    /// the path exists.  Care should be taken not to rely on its result.
+    ///
+    /// # Platform-specific behaviour
+    ///
+    /// This function currently corresponds to the `faccessat` function in Unix,
+    /// with a directory of `AT_FDCWD`, and the `AT_EACCESS` flag to perform the
+    /// check against the effective user and group.
+    ///
+    /// On Windows it currently delegates to `std::path::Path::exists`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use std::path::Path;
+    /// use faccess::PathExt;
+    ///
+    /// assert_eq!(Path::new("/bin/ls").executable(), true);
+    /// ```
     fn executable(&self) -> bool;
 }
 
