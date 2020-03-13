@@ -1,5 +1,6 @@
 #[cfg(unix)]
 mod imp {
+    use std::ffi::CString;
     use std::os::unix::ffi::OsStrExt;
     use std::path::Path;
 
@@ -13,14 +14,8 @@ mod imp {
     use libc::AT_EACCESS;
 
     fn eaccess(p: &Path, mode: c_int) -> bool {
-        unsafe {
-            faccessat(
-                AT_FDCWD,
-                p.as_os_str().as_bytes().as_ptr() as *const i8,
-                mode,
-                AT_EACCESS,
-            ) == 0
-        }
+        let path = CString::new(p.as_os_str().as_bytes()).expect("Path can't contain NULL");
+        unsafe { faccessat(AT_FDCWD, path.as_ptr() as *const i8, mode, AT_EACCESS) == 0 }
     }
 
     pub fn readable(p: &Path) -> bool {
