@@ -6,9 +6,13 @@
 //! given path.
 //!
 //! This corresponds to the [`faccessat`] function on Unix platforms where
-//! available.  Where similar functionality is unimplemented, a fallback to
-//! `std::path::Path::exists` and `std::fs::Permissions::readonly` is used,
-//! which may provide inaccurate results.
+//! available.
+//!
+//! A custom implementation is included for Windows which attempts to approximate
+//! its semantics in a best-effort fashion.
+//!
+//! On other platforms, a fallback to `std::path::Path::exists` and
+//! `std::fs::Permissions::readonly` is used.
 //!
 //! Care should be taken with these functions not to introduce time-of-check
 //! to time-of-use ([TOCTOU]) bugs, and in particular should not be relied upon
@@ -68,7 +72,7 @@ mod imp {
 
 #[cfg(windows)]
 mod imp {
-    use std::os::windows::ffi::OsStrExt;
+    use std::os::windows::{ffi::OsStrExt, fs::OpenOptionsExt};
     use std::path::Path;
 
     // Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn
@@ -211,8 +215,6 @@ mod imp {
                 }
             }
 
-            // 
-            use std::os::windows::fs::OpenOptionsExt;
             return std::fs::OpenOptions::new()
                 .access_mode(mode)
                 .open(p)
@@ -320,6 +322,9 @@ pub trait PathExt {
     /// with a directory of `AT_FDCWD`, and the `AT_EACCESS` flag to perform the
     /// check against the effective user and group.
     ///
+    /// On Windows a custom check is performed which attempts to approximate its
+    /// semantics.
+    ///
     /// On other platforms it currently delegates to `std::path::Path::exists`.
     ///
     /// # Examples
@@ -344,6 +349,9 @@ pub trait PathExt {
     /// This function currently corresponds to the [`faccessat`] function in Unix,
     /// with a directory of `AT_FDCWD`, and the `AT_EACCESS` flag to perform the
     /// check against the effective user and group.
+    ///
+    /// On Windows a custom check is performed which attempts to approximate its
+    /// semantics.
     ///
     /// On other platforms it currently delegates to `std::fs::Permissions::readonly`.
     ///
@@ -377,6 +385,9 @@ pub trait PathExt {
     /// This function currently corresponds to the [`faccessat`] function in Unix,
     /// with a directory of `AT_FDCWD`, and the `AT_EACCESS` flag to perform the
     /// check against the effective user and group.
+    ///
+    /// On Windows a custom check is performed which attempts to approximate its
+    /// semantics.
     ///
     /// On other platforms it currently delegates to `std::path::Path::exists`.
     ///
