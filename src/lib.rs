@@ -27,7 +27,7 @@
 //! use faccess::AccessMode;
 //!
 //! let path = Path::new("/bin/sh");
-//! assert_eq!(path.access(AccessMode::READ | AccessMode::EXECUTE), Ok(()));
+//! assert_eq!(path.access(AccessMode::READ | AccessMode::EXECUTE).is_ok(), true);
 //! assert_eq!(path.readable(), true);
 //! assert_eq!(path.writable(), false);
 //! assert_eq!(path.executable(), true);
@@ -243,7 +243,10 @@ mod imp {
         if !md.is_dir() {
             // Read Only is ignored for directories
             if mode & FILE_GENERIC_WRITE == FILE_GENERIC_WRITE && md.permissions().readonly() {
-                return Err(io::Error::new(io::ErrorKind::PermissionDenied, "File is read only"));
+                return Err(io::Error::new(
+                    io::ErrorKind::PermissionDenied,
+                    "File is read only",
+                ));
             }
 
             // If it doesn't have the correct extension it isn't executable
@@ -251,7 +254,12 @@ mod imp {
                 if let Some(ext) = p.extension().and_then(|s| s.to_str()) {
                     match ext {
                         "exe" | "com" | "bat" | "cmd" => (),
-                        _ => return Err(io::Error::new(io::ErrorKind::InvalidData, "File not executable")),
+                        _ => {
+                            return Err(io::Error::new(
+                                io::ErrorKind::InvalidData,
+                                "File not executable",
+                            ))
+                        }
                     }
                 }
             }
@@ -262,7 +270,10 @@ mod imp {
                 .map(|_| ());
         } else if mode & FILE_GENERIC_EXECUTE == FILE_GENERIC_EXECUTE {
             // You can't execute directories
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "Directory not executable"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Directory not executable",
+            ));
         }
 
         let sd = SecurityDescriptor::for_path(p)?;
@@ -309,7 +320,10 @@ mod imp {
             ) != 0
         } {
             if result == 0 {
-                Err(io::Error::new(io::ErrorKind::PermissionDenied, "Permission Denied"))
+                Err(io::Error::new(
+                    io::ErrorKind::PermissionDenied,
+                    "Permission Denied",
+                ))
             } else {
                 Ok(())
             }
@@ -352,9 +366,12 @@ mod imp {
     pub fn access(p: &Path, mode: AccessMode) -> io::Result<()> {
         if mode.contains(AccessMode::WRITE) {
             if std::fs::metadata(p)?.permissions().readonly() {
-                return Err(io::Error::new(io::ErrorKind::PermissionDenied, "Path is read only"));
+                return Err(io::Error::new(
+                    io::ErrorKind::PermissionDenied,
+                    "Path is read only",
+                ));
             } else {
-                return Ok(())
+                return Ok(());
             }
         }
 
@@ -466,7 +483,7 @@ pub trait PathExt {
     }
 }
 
-impl PathExt for std::path::Path {
+impl PathExt for Path {
     fn access(&self, mode: AccessMode) -> io::Result<()> {
         imp::access(&self, mode)
     }
@@ -478,7 +495,9 @@ fn amazing_test_suite() {
 
     assert!(cargotoml.access(AccessMode::EXISTS).is_ok());
     assert!(cargotoml.access(AccessMode::READ).is_ok());
-    assert!(cargotoml.access(AccessMode::READ | AccessMode::WRITE).is_ok());
+    assert!(cargotoml
+        .access(AccessMode::READ | AccessMode::WRITE)
+        .is_ok());
 
     assert!(cargotoml.readable());
     assert!(cargotoml.writable());
@@ -486,7 +505,9 @@ fn amazing_test_suite() {
     #[cfg(unix)]
     {
         assert!(!cargotoml.executable());
-        assert!(cargotoml.access(AccessMode::READ | AccessMode::EXECUTE).is_err());
+        assert!(cargotoml
+            .access(AccessMode::READ | AccessMode::EXECUTE)
+            .is_err());
 
         let sh = Path::new("/bin/sh");
         assert!(sh.readable());
@@ -500,7 +521,9 @@ fn amazing_test_suite() {
     #[cfg(windows)]
     {
         assert!(!cargotoml.executable());
-        assert!(cargotoml.access(AccessMode::READ | AccessMode::EXECUTE).is_err());
+        assert!(cargotoml
+            .access(AccessMode::READ | AccessMode::EXECUTE)
+            .is_err());
 
         let notepad = Path::new("C:\\Windows\\notepad.exe");
         assert!(notepad.readable());
