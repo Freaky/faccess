@@ -1,6 +1,6 @@
 [package]
 name = "faccess"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Thomas Hurst <tom@hur.st>"]
 edition = "2018"
 description = "Simple file accessibility checks"
@@ -10,5 +10,8 @@ keywords = ["file", "access"]
 categories = ["api-bindings", "filesystem"]
 readme = "README.md"
 
-[dependencies]
+[target.'cfg(unix)'.dependencies]
 libc = "0.2.67"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3.8", features = ["accctrl", "aclapi", "handleapi", "impl-default", "minwindef", "processthreadsapi", "securitybaseapi", "winbase", "winerror", "winnt"] }

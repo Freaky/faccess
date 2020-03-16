@@ -1,3 +1,34 @@
+#![warn(missing_docs)]
+
+//! `faccess` provides an extension trait for `std::path::Path` which adds
+//! `readable`, `writable`, and `executable` methods to test whether the current
+//! user (or effective user) is likely to be able to read, write, or execute a
+//! given path.
+//!
+//! This corresponds to the [`faccessat`] function on Unix platforms where
+//! available.  Where similar functionality is unimplemented, a fallback to
+//! `std::path::Path::exists` and `std::fs::Permissions::readonly` is used,
+//! which may provide inaccurate results.
+//!
+//! Care should be taken with these functions not to introduce time-of-check
+//! to time-of-use ([TOCTOU]) bugs, and in particular should not be relied upon
+//! in a security context.
+//!
+//! # Example
+//!
+//! ```no_run
+//! use std::path::Path;
+//! use faccess::PathExt;
+//!
+//! let path = Path::new("/bin/sh");
+//! assert_eq!(path.readable(), true);
+//! assert_eq!(path.writable(), false);
+//! assert_eq!(path.executable(), true);
+//! ```
+//!
+//! [`faccessat`]: https://pubs.opengroup.org/onlinepubs/9699919799/functions/access.html
+//! [TOCTOU]: https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use
+
 #[cfg(unix)]
 mod imp {
     use std::ffi::CString;
@@ -10,7 +41,11 @@ mod imp {
     #[cfg(target_os = "linux")]
     use libc::AT_REMOVEDIR as AT_EACCESS;
 
-    #[cfg(not(target_os = "linux"))]
+    // Not provided on Android
+    #[cfg(target_os = "android")]
+    const ET_EACCESS: c_int = 0;
+
+    #[cfg(not(any(target_os = "linux", target_os = "android")))]
     use libc::AT_EACCESS;
 
     fn eaccess(p: &Path, mode: c_int) -> bool {
@@ -31,7 +66,226 @@ mod imp {
     }
 }
 
-#[cfg(not(unix))]
+#[cfg(windows)]
+mod imp {
+    use std::os::windows::ffi::OsStrExt;
+    use std::path::Path;
+
+    // Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn
+    use winapi::shared::minwindef::DWORD;
+    use winapi::shared::winerror::ERROR_SUCCESS;
+    use winapi::um::accctrl::SE_FILE_OBJECT;
+    use winapi::um::aclapi::GetNamedSecurityInfoW;
+    use winapi::um::handleapi::CloseHandle;
+    use winapi::um::processthreadsapi::{GetCurrentThread, OpenThreadToken};
+    use winapi::um::securitybaseapi::{
+        AccessCheck, GetSidIdentifierAuthority, ImpersonateSelf, IsValidSid, MapGenericMask,
+        RevertToSelf,
+    };
+    use winapi::um::winbase::LocalFree;
+    use winapi::um::winnt::{
+        SecurityImpersonation, DACL_SECURITY_INFORMATION, FILE_ALL_ACCESS, FILE_GENERIC_EXECUTE,
+        FILE_GENERIC_READ, FILE_GENERIC_WRITE, GENERIC_MAPPING, GROUP_SECURITY_INFORMATION, HANDLE,
+        LABEL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, PACL, PRIVILEGE_SET,
+        PSECURITY_DESCRIPTOR, PSID, SID_IDENTIFIER_AUTHORITY, TOKEN_DUPLICATE, TOKEN_QUERY,
+    };
+
+    struct SecurityDescriptor {
+        pub sd: PSECURITY_DESCRIPTOR,
+        pub owner: PSID,
+        _group: PSID,
+        _dacl: PACL,
+    }
+
+    impl Drop for SecurityDescriptor {
+        fn drop(&mut self) {
+            if !self.sd.is_null() {
+                unsafe {
+                    LocalFree(self.sd as *mut _);
+                }
+            }
+        }
+    }
+
+    impl SecurityDescriptor {
+        fn for_path(p: &Path) -> std::io::Result<SecurityDescriptor> {
+            let path = std::fs::canonicalize(p)?;
+            let pathos = path.into_os_string();
+            let mut pathw: Vec<u16> = Vec::with_capacity(pathos.len() + 1);
+            pathw.extend(pathos.encode_wide());
+            pathw.push(0);
+
+            let mut sd = std::ptr::null_mut();
+            let mut owner = std::ptr::null_mut();
+            let mut group = std::ptr::null_mut();
+            let mut dacl = std::ptr::null_mut();
+
+            let err = unsafe {
+                GetNamedSecurityInfoW(
+                    pathw.as_ptr(),
+                    SE_FILE_OBJECT,
+                    OWNER_SECURITY_INFORMATION
+                        | GROUP_SECURITY_INFORMATION
+                        | DACL_SECURITY_INFORMATION
+                        | LABEL_SECURITY_INFORMATION,
+                    &mut owner,
+                    &mut group,
+                    &mut dacl,
+                    std::ptr::null_mut(),
+                    &mut sd,
+                )
+            };
+
+            if err == ERROR_SUCCESS {
+                Ok(SecurityDescriptor {
+                    sd,
+                    owner,
+                    _group: group,
+                    _dacl: dacl,
+                })
+            } else {
+                Err(std::io::Error::last_os_error())
+            }
+        }
+    }
+
+    struct ThreadToken(HANDLE);
+    impl Drop for ThreadToken {
+        fn drop(&mut self) {
+            unsafe {
+                CloseHandle(self.0);
+            }
+        }
+    }
+
+    impl ThreadToken {
+        fn new() -> std::io::Result<Self> {
+            unsafe {
+                if ImpersonateSelf(SecurityImpersonation) == 0 {
+                    return Err(std::io::Error::last_os_error());
+                }
+
+                let mut token: HANDLE = std::ptr::null_mut();
+                let err = OpenThreadToken(
+                    GetCurrentThread(),
+                    TOKEN_DUPLICATE | TOKEN_QUERY,
+                    0,
+                    &mut token,
+                );
+
+                RevertToSelf();
+
+                if err == 0 {
+                    return Err(std::io::Error::last_os_error());
+                }
+
+                Ok(Self(token))
+            }
+        }
+
+        // Caller responsible for not dropping while this is used
+        unsafe fn as_handle(&self) -> HANDLE {
+            self.0
+        }
+    }
+
+    // Based roughly on Tcl's NativeAccess()
+    // https://github.com/tcltk/tcl/blob/2ee77587e4dc2150deb06b48f69db948b4ab0584/win/tclWinFile.c
+    fn eaccess(p: &Path, mut mode: DWORD) -> std::io::Result<bool> {
+        let md = p.metadata()?;
+        // let attr = md.file_attributes();
+
+        if !md.is_dir() {
+            // Read Only is ignored for directories
+            if mode == FILE_GENERIC_WRITE && md.permissions().readonly() {
+                return Ok(false);
+            }
+
+            // If it doesn't have the correct extension it isn't executable
+            if mode == FILE_GENERIC_EXECUTE {
+                if let Some(ext) = p.extension().and_then(|s| s.to_str()) {
+                    match ext {
+                        "exe" | "com" | "bat" | "cmd" => (),
+                        _ => return Ok(false),
+                    }
+                }
+            }
+
+            // 
+            use std::os::windows::fs::OpenOptionsExt;
+            return std::fs::OpenOptions::new()
+                .access_mode(mode)
+                .open(p)
+                .map(|_| true);
+        } else if mode == FILE_GENERIC_EXECUTE {
+            // You can't execute directories
+            return Ok(false);
+        }
+
+        let sd = SecurityDescriptor::for_path(p)?;
+
+        // Unmapped Samba users are assigned a top level authority of 22
+        // ACL tests are likely to be misleading
+        const SAMBA_UNMAPPED: SID_IDENTIFIER_AUTHORITY = SID_IDENTIFIER_AUTHORITY {
+            Value: [0, 0, 0, 0, 0, 22],
+        };
+        unsafe {
+            if IsValidSid(sd.owner) != 0
+                && (*GetSidIdentifierAuthority(sd.owner)).Value == SAMBA_UNMAPPED.Value
+            {
+                return Ok(true);
+            }
+        }
+
+        let token = ThreadToken::new()?;
+
+        let mut ret = false;
+        let mut privileges: PRIVILEGE_SET = PRIVILEGE_SET::default();
+        let mut granted_access: DWORD = 0;
+        let mut privileges_length = std::mem::size_of::<PRIVILEGE_SET>() as u32;
+        let mut result = 0;
+
+        let mut mapping = GENERIC_MAPPING {
+            GenericRead: FILE_GENERIC_READ,
+            GenericWrite: FILE_GENERIC_WRITE,
+            GenericExecute: FILE_GENERIC_EXECUTE,
+            GenericAll: FILE_ALL_ACCESS,
+        };
+
+        unsafe { MapGenericMask(&mut mode, &mut mapping) };
+
+        if unsafe {
+            AccessCheck(
+                sd.sd,
+                token.as_handle(),
+                mode,
+                &mut mapping as *mut _,
+                &mut privileges as *mut _,
+                &mut privileges_length as *mut _,
+                &mut granted_access as *mut _,
+                &mut result as *mut _,
+            ) != 0
+        } {
+            ret = result != 0;
+        }
+
+        Ok(ret)
+    }
+
+    pub fn readable(p: &Path) -> bool {
+        eaccess(p, FILE_GENERIC_READ).unwrap_or(false)
+    }
+
+    pub fn writable(p: &Path) -> bool {
+        eaccess(p, FILE_GENERIC_WRITE).unwrap_or(false)
+    }
+
+    pub fn executable(p: &Path) -> bool {
+        eaccess(p, FILE_GENERIC_EXECUTE).unwrap_or(false)
+    }
+}
+
+#[cfg(not(any(unix, windows)))]
 mod imp {
     use std::path::Path;
 
@@ -50,6 +304,7 @@ mod imp {
     }
 }
 
+/// Extension trait for `std::path::Path`.
 pub trait PathExt {
     /// Returns `true` if the path points at a readable entity.
     ///
@@ -156,26 +411,46 @@ impl PathExt for std::path::Path {
 fn amazing_test_suite() {
     use std::path::Path;
 
-    let path = Path::new("Cargo.toml");
-    let notpath = Path::new("Cargo.toml from another dimension");
+    let cargotoml = Path::new("Cargo.toml");
 
     #[cfg(unix)]
     {
-        assert!(path.readable());
-        assert!(path.writable());
-        assert!(!path.executable());
+        assert!(cargotoml.readable());
+        assert!(cargotoml.writable());
+        assert!(!cargotoml.executable());
 
-        assert!(Path::new("/bin/sh").executable());
+        let sh = Path::new("/bin/sh");
+        assert!(sh.readable());
+        assert!(!sh.writable());
+        assert!(sh.executable());
     }
 
-    #[cfg(not(unix))]
+    #[cfg(windows)]
     {
-        assert!(path.readable());
-        assert!(path.writable());
-        assert!(path.executable());
+        assert!(cargotoml.readable());
+        assert!(cargotoml.writable());
+        assert!(!cargotoml.executable());
+
+        let notepad = Path::new("C:\\Windows\\notepad.exe");
+        assert!(notepad.readable());
+        assert!(!notepad.writable());
+        assert!(notepad.executable());
+
+        let windows = Path::new("C:\\Windows");
+        assert!(windows.readable());
+        assert!(!windows.writable());
+        assert!(!windows.executable());
     }
 
-    assert!(!notpath.readable());
-    assert!(!notpath.writable());
-    assert!(!notpath.executable());
+    #[cfg(not(any(unix, windows)))]
+    {
+        assert!(cargotoml.readable());
+        assert!(cargotoml.writable());
+        assert!(cargotoml.executable());
+    }
+
+    let missing = Path::new("Cargo.toml from another dimension");
+    assert!(!missing.readable());
+    assert!(!missing.writable());
+    assert!(!missing.executable());
 }
