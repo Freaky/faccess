@@ -9,17 +9,23 @@ Basic file accessibility checks for Rust.
 
 ```rust
 use std::path::Path;
-use faccess::PathExt;
+use faccess::{AccessMode, PathExt};
 
 let path = Path::new("/bin/ls");
+
+assert!(path.access(AccessMode::READ | AccessMode::Executable).is_ok());
 assert!(path.readable());
 assert!(!path.writable());
 assert!(path.executable());
 ```
 
 On Unix, this uses [`faccessat(2)`] with `AT_EACCESS` to check against the
-effective user and group ID's, on other platforms it simply proxies to
-`exists()` and `readonly()` as appropriate.
+effective user and group ID's.
+
+On Windows it uses, amongst other things, [`AccessCheck`] to try to match the
+appropriate semantics.
+
+On other platforms it simply proxies to `exists()` and `readonly()` as appropriate.
 
 
 ## Caveats
@@ -30,5 +36,6 @@ alternatives to checking to see if opening a file or launching a program actuall
 succeeded.
 
 [`faccessat(2)`]: https://pubs.opengroup.org/onlinepubs/9699919799/functions/access.html
+[`AccessCheck`]: https://docs.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-accesscheck
 [TOCTOU]: https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use
 [crate]: https://crates.io/crates/faccess
