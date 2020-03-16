@@ -13,7 +13,7 @@ use faccess::{AccessMode, PathExt};
 
 let path = Path::new("/bin/ls");
 
-assert!(path.access(AccessMode::READ | AccessMode::Executable).is_ok());
+assert!(path.access(AccessMode::READ | AccessMode::EXECUTE).is_ok());
 assert!(path.readable());
 assert!(!path.writable());
 assert!(path.executable());
