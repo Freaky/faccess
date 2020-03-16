@@ -197,7 +197,6 @@ mod imp {
     // https://github.com/tcltk/tcl/blob/2ee77587e4dc2150deb06b48f69db948b4ab0584/win/tclWinFile.c
     fn eaccess(p: &Path, mut mode: DWORD) -> std::io::Result<bool> {
         let md = p.metadata()?;
-        // let attr = md.file_attributes();
 
         if !md.is_dir() {
             // Read Only is ignored for directories
