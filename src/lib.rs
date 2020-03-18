@@ -539,7 +539,7 @@ fn amazing_test_suite() {
         assert!(windows.readable());
         // Github runs as an Administrator, rendering this test useless there.
         // assert!(!windows.writable());
-        assert!(!windows.executable());
+        assert!(windows.executable());
     }
 
     #[cfg(not(any(unix, windows)))]
