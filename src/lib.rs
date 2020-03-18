@@ -382,11 +382,12 @@ mod imp {
 /// Extension trait for `std::path::Path`.
 pub trait PathExt {
     /// Returns `Ok(())` if the path points at an entity which can be accessed
-    /// with the given `AccessMode`, otherwise returns an `io::Error` indicating
+    /// with the given `AccessMode`, otherwise returns `Err(io::Error)` indicating
     /// why the access check failed.
     ///
     /// This function will traverse symbolic links.  In the case of broken
-    /// symbolic links it will return `false`.
+    /// symbolic links it will return an `io::Error` with a `kind()` of
+    /// `io::ErrorKind::NotFound`.
     ///
     /// This function is best-effort, and on some platforms may simply indicate
     /// the path exists.  Care should be taken not to rely on its result.
