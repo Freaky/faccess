@@ -18,3 +18,7 @@ winapi = { version = "0.3.8", features = ["accctrl", "aclapi", "handleapi", "imp
 
 [dependencies]
 bitflags = "1.2.1"
+
+[package.metadata.docs.rs]
+# Docs are identical across targets.
+targets = []
