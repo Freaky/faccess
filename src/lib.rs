@@ -400,6 +400,9 @@ pub trait PathExt {
     /// On Windows a custom check is performed which attempts to approximate its
     /// semantics.
     ///
+    /// On other platforms, a fallback to `std::path::Path::exists` and
+    /// `std::fs::Permissions::readonly` is used.
+    ///
     /// # Examples
     ///
     /// ```no_run
