@@ -60,9 +60,9 @@ On other platforms it simply proxies to `exists()` and `readonly()` as appropria
 ## Caveats
 
 There is a history of time-of-check to time-of-use ([TOCTOU]) bugs with this
-class of function, particularly with set-user-ID programs relying on it to
+class of function, particularly with set-user-ID programs relying on them to
 validate effective user/group permissions prior to accessing files on behalf
-of other users.
+of other users.  They should not be relied upon in a security context.
 
 [`faccessat(2)`]: https://pubs.opengroup.org/onlinepubs/9699919799/functions/access.html
 [`GetNamedSecurityInfoW`]: https://docs.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getnamedsecurityinfow
