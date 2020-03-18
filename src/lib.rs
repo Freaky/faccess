@@ -65,16 +65,12 @@ mod imp {
 
     use libc::{c_int, faccessat, AT_FDCWD, F_OK, R_OK, W_OK, X_OK};
 
-    // revert once https://github.com/rust-lang/libc/pull/1693 lands
-    #[cfg(target_os = "linux")]
-    use libc::AT_REMOVEDIR as AT_EACCESS;
-
     // Not provided on Android
-    #[cfg(target_os = "android")]
-    const ET_EACCESS: c_int = 0;
-
-    #[cfg(not(any(target_os = "linux", target_os = "android")))]
+    #[cfg(not(target_os = "android"))]
     use libc::AT_EACCESS;
+
+    #[cfg(target_os = "android")]
+    const AT_EACCESS: c_int = 0;
 
     fn eaccess(p: &Path, mode: c_int) -> io::Result<()> {
         let path = CString::new(p.as_os_str().as_bytes()).expect("Path can't contain NULL");
