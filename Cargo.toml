@@ -11,7 +11,7 @@ categories = ["api-bindings", "filesystem"]
 readme = "README.md"
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2.68"
+libc = "~0.2.68"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.8", features = ["accctrl", "aclapi", "handleapi", "impl-default", "minwindef", "processthreadsapi", "securitybaseapi", "winbase", "winerror", "winnt"] }
