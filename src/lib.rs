@@ -543,7 +543,13 @@ fn amazing_test_suite() {
     }
 
     let missing = Path::new("Cargo.toml from another dimension");
-    assert!(missing.access(AccessMode::EXISTS).is_err());
+    assert_eq!(
+        missing
+            .access(AccessMode::EXISTS)
+            .map_err(|e| e.kind())
+            .expect_err("File should not exist"),
+        io::ErrorKind::NotFound
+    );
     assert!(!missing.readable());
     assert!(!missing.writable());
     assert!(!missing.executable());
