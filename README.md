@@ -1,5 +1,6 @@
-[![Cargo](https://img.shields.io/crates/v/faccess.svg)][crate] 
-![](https://github.com/Freaky/faccess/workflows/build/badge.svg)
+[![Cargo](https://img.shields.io/crates/v/faccess.svg)][crate]
+[![Documentation](https://docs.rs/faccess/badge.svg)][docs]
+[![CI](https://github.com/Freaky/faccess/workflows/build/badge.svg)][ci]
 
 # faccess
 
@@ -39,3 +40,5 @@ succeeded.
 [`AccessCheck`]: https://docs.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-accesscheck
 [TOCTOU]: https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use
 [crate]: https://crates.io/crates/faccess
+[docs]: https://docs.rs/faccess
+[ci]: https://github.com/Freaky/faccess/actions
