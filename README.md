@@ -1,5 +1,5 @@
 [![Cargo](https://img.shields.io/crates/v/faccess.svg)][crate] 
-![](https://github.com/Freaky/faccess/workflows/Continuous%20Integration/badge.svg)
+![](https://github.com/Freaky/faccess/workflows/build/badge.svg)
 
 # faccess
 
