@@ -264,12 +264,6 @@ mod imp {
                 .access_mode(mode)
                 .open(p)
                 .map(|_| ());
-        } else if mode & FILE_GENERIC_EXECUTE == FILE_GENERIC_EXECUTE {
-            // You can't execute directories
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "Directory not executable",
-            ));
         }
 
         let sd = SecurityDescriptor::for_path(p)?;
