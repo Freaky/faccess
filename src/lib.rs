@@ -150,8 +150,8 @@ mod imp {
     };
 
     struct SecurityDescriptor {
-        pub sd: PSECURITY_DESCRIPTOR,
-        pub owner: PSID,
+        sd: PSECURITY_DESCRIPTOR,
+        owner: PSID,
         _group: PSID,
         _dacl: PACL,
     }
@@ -206,6 +206,14 @@ mod imp {
                 Err(std::io::Error::last_os_error())
             }
         }
+
+        fn as_descriptor(&self) -> &PSECURITY_DESCRIPTOR {
+            &self.sd
+        }
+
+        fn as_owner(&self) -> &PSID {
+            &self.owner
+        }
     }
 
     struct ThreadToken(HANDLE);
@@ -242,9 +250,8 @@ mod imp {
             }
         }
 
-        // Caller responsible for not dropping while this is used
-        unsafe fn as_handle(&self) -> HANDLE {
-            self.0
+        fn as_handle(&self) -> &HANDLE {
+            &self.0
         }
     }
 
@@ -291,8 +298,9 @@ mod imp {
             Value: [0, 0, 0, 0, 0, 22],
         };
         unsafe {
-            if IsValidSid(sd.owner) != 0
-                && (*GetSidIdentifierAuthority(sd.owner)).Value == SAMBA_UNMAPPED.Value
+            let owner = sd.as_owner();
+            if IsValidSid(*owner) != 0
+                && (*GetSidIdentifierAuthority(*owner)).Value == SAMBA_UNMAPPED.Value
             {
                 return Ok(());
             }
@@ -316,8 +324,8 @@ mod imp {
 
         if unsafe {
             AccessCheck(
-                sd.sd,
-                token.as_handle(),
+                *sd.as_descriptor(),
+                *token.as_handle(),
                 mode,
                 &mut mapping as *mut _,
                 &mut privileges as *mut _,
