@@ -1,11 +1,12 @@
 #![warn(missing_docs)]
+#![warn(missing_doc_code_examples)]
 
 //! `faccess` provides an extension trait for `std::path::Path` which adds an
-//! `access` method for checking the accessibility of a path for the given access
-//! permissions — a bitwise-inclusive OR of one or more `AccessMode` flags
+//! [`access`] method for checking the accessibility of a path for the given access
+//! permissions — a bitwise-inclusive OR of one or more [`AccessMode`] flags
 //! (`EXISTS`, `READ`, `WRITE`, `EXECUTE`).
 //!
-//! It also provides convenience methods `readable`, `writable`, and `executable`
+//! It also provides convenience methods [`readable`], [`writable`], and [`executable`]
 //! if only a single permission needs to be checked in a simple boolean fashion.
 //!
 //! # Example
@@ -47,6 +48,11 @@
 //! [`GetNamedSecurityInfoW`]: https://docs.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getnamedsecurityinfow
 //! [`AccessCheck`]: https://docs.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-accesscheck
 //! [TOCTOU]: https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use
+//! [`access`]: trait.PathExt.html#tymethod.access
+//! [`readable`]: trait.PathExt.html#method.readable
+//! [`writable`]: trait.PathExt.html#method.writable
+//! [`executable`]: trait.PathExt.html#method.executable
+//! [`AccessMode`]: struct.AccessMode.html
 
 use std::io;
 use std::path::Path;
@@ -430,7 +436,7 @@ pub trait PathExt {
 
     /// Returns `true` if the path points at a readable entity.
     ///
-    /// Equivalent to `access(AccessMode::READ).is_ok()`.
+    /// Equivalent to [`access(AccessMode::READ).is_ok()`](#tymethod.access).
     ///
     /// # Examples
     ///
@@ -448,7 +454,7 @@ pub trait PathExt {
 
     /// Returns `true` if the path points at a writable entity.
     ///
-    /// Equivalent to `access(AccessMode::WRITE).is_ok()`.
+    /// Equivalent to [`access(AccessMode::WRITE).is_ok()`](#tymethod.access).
     ///
     /// # Examples
     ///
@@ -471,7 +477,7 @@ pub trait PathExt {
 
     /// Returns `true` if the path points at an executable entity.
     ///
-    /// Equivalent to `access(AccessMode::EXECUTE).is_ok()`.
+    /// Equivalent to [`access(AccessMode::EXECUTE).is_ok()`](#tymethod.access).
     ///
     /// # Examples
     ///
