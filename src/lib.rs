@@ -90,7 +90,7 @@ mod imp {
     const AT_EACCESS: c_int = 0;
 
     fn eaccess(p: &Path, mode: c_int) -> io::Result<()> {
-        let path = CString::new(p.as_os_str().as_bytes()).expect("Path can't contain NULL");
+        let path = CString::new(p.as_os_str().as_bytes())?;
         unsafe {
             if faccessat(AT_FDCWD, path.as_ptr() as *const i8, mode, AT_EACCESS) == 0 {
                 Ok(())
@@ -572,4 +572,6 @@ fn amazing_test_suite() {
     assert!(!missing.readable());
     assert!(!missing.writable());
     assert!(!missing.executable());
+
+    assert!(Path::new("\0").access(AccessMode::EXISTS).is_err());
 }
