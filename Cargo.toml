@@ -1,6 +1,6 @@
 [package]
 name = "faccess"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["Thomas Hurst <tom@hur.st>"]
 edition = "2018"
 description = "Simple file accessibility checks"
