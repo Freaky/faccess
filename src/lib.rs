@@ -80,7 +80,7 @@ mod imp {
     use std::ffi::CString;
     use std::os::unix::ffi::OsStrExt;
 
-    use libc::{c_int, faccessat, AT_FDCWD, F_OK, R_OK, W_OK, X_OK};
+    use libc::{c_int, c_char, faccessat, AT_FDCWD, F_OK, R_OK, W_OK, X_OK};
 
     // Not provided on Android
     #[cfg(not(target_os = "android"))]
@@ -92,7 +92,7 @@ mod imp {
     fn eaccess(p: &Path, mode: c_int) -> io::Result<()> {
         let path = CString::new(p.as_os_str().as_bytes())?;
         unsafe {
-            if faccessat(AT_FDCWD, path.as_ptr() as *const i8, mode, AT_EACCESS) == 0 {
+            if faccessat(AT_FDCWD, path.as_ptr() as *const c_char, mode, AT_EACCESS) == 0 {
                 Ok(())
             } else {
                 Err(io::Error::last_os_error())
