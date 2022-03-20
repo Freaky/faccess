@@ -369,7 +369,7 @@ mod imp {
                 Err(io::Error::new(io::ErrorKind::NotFound, "Not Found"))
             }
         } else {
-            eaccess(&p, imode)
+            eaccess(p, imode)
         }
     }
 }
