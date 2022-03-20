@@ -1,5 +1,5 @@
 #![warn(missing_docs)]
-#![warn(missing_doc_code_examples)]
+#![warn(rustdoc::missing_doc_code_examples)]
 
 //! `faccess` provides an extension trait for `std::path::Path` which adds an
 //! [`access`] method for checking the accessibility of a path for the given access
